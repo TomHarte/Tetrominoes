@@ -8,11 +8,19 @@
 		<script type="text/javascript">
 			var BOARD_WIDTH = 10;
 			var BOARD_HEIGHT = 20;
+			
+			var NEXT_WIDTH = 6;
+			var NEXT_HEIGHT = 14;
 
 			function setcolour(x, y, colour)
 			{
 				if(x >= 0 && x < BOARD_WIDTH && y >= 0 & y < BOARD_HEIGHT)
 					gametable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor = colour;			}
+			function setcolour_next(x, y, colour) {
+				if(x >= 0 && x < NEXT_WIDTH && y >= 0 && y < NEXT_HEIGHT)
+					nexttable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor = colour;
+			}
+			
 			function getcolour(x, y)
 			{
 				if(x >= 0 && x < BOARD_WIDTH && y >= 0 & y < BOARD_HEIGHT)
@@ -20,22 +28,52 @@
 
 				return (y > 0) ? "#ffffff" : "#000000";
 			}
+			function getcolour_next(x, y)
+			{
+				if(x >= 0 && x < NEXT_WIDTH && y >= 0 & y < NEXT_HEIGHT)
+					return nexttable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor;
 
-			var currentshape = [[0, 0], [0, 0], [0, 0], [0, 0]];
-			var currentcolour;
+				return (y > 0) ? "#ffffff" : "#000000";
+			}
+			
+			// Shape queue holds current in index zero, next in index 1, and the one after in index 2
+			var shapequeue = [ [[0, 0], [0, 0], [0, 0], [0, 0]], 
+					    [[0, 0], [0, 0], [0, 0], [0, 0]], 
+					    [[0, 0], [0, 0], [0, 0], [0, 0]], 
+					    [[0, 0], [0, 0], [0, 0], [0, 0]] ];
+			var colourqueue = [0,0,0,0];
+			//var currentshape = [[0, 0], [0, 0], [0, 0], [0, 0]];
+			//var currentcolour;
 			var locked = false;
 
-			function drawpiece(colour)
+			function drawpiece(colour, idx)
 			{
-				for(c = 0; c < 4; c++)
-					setcolour(x + currentshape[c][0], y + currentshape[c][1], colour);
+				if(idx == 0) for(c = 0; c < 4; c++)
+					setcolour(x + shapequeue[idx][c][0], y + shapequeue[idx][c][1], colour);
+					
+				else 
+				{
+					for(ix = 0; ix < 5; ix++) 
+						for(iy = 0; iy < 3; iy++)
+						{
+							setcolour_next(ix, 5 + 3*(idx-1) + iy, "#ffffff");
+						}
+					for(c = 0; c < 4; c++) 
+						setcolour_next(3 + shapequeue[idx][c][0], 5 + 3*(idx-1) + shapequeue[idx][c][1], colour);
+				}
 			}
 
 			function overlapping()
 			{
 				for(c = 0; c < 4; c++)
-					if(getcolour(x + currentshape[c][0], y + currentshape[c][1]) != "#000000")
+				{
+					var xx = x + shapequeue[0][c][0];
+					if(xx < 0 || xx >= BOARD_WIDTH)
 						return true;
+					
+					if(getcolour(xx, y + shapequeue[0][c][1]) != "#000000")
+						return true;
+				}
 				return false;
 			}
 
@@ -68,24 +106,46 @@
 
 			function pickpiece()
 			{
-				y = 0;
+				// Clear the next pieces
+				drawpiece("#FFFFFF", 1);
+				drawpiece("#FFFFFF", 2);
+				drawpiece("#FFFFFF", 3);
+				
+				// Determine a new piece to add to the back of the queue
 				var piece = Math.floor( Math.random() * 7);
 				x = (BOARD_WIDTH-1) / 2 + offsets[piece];
-				for(s = 0; s < 4; s++)
-				{
-					currentshape[s][0] = shapes[piece][s][0];
-					currentshape[s][1] = shapes[piece][s][1];
+				y = 0;
+				for(s = 0; s < 4; s++) 
+				{				
+					// Shift up pieces in the queue
+					for(var t = 0; t < 3; t++) for(var u = 0; u < 2; u ++)
+					shapequeue[t][s][u] = shapequeue[t+1][s][u];
+					//shapequeue[0][s][1] = shapequeue[1][s][1];
+					//shapequeue[1][s][0] = shapequeue[2][s][0];
+					//shapequeue[1][s][1] = shapequeue[2][s][1];
+					
+					// Add new random piece to back of queue
+					shapequeue[3][s][0] = shapes[piece][s][0];
+					shapequeue[3][s][1] = shapes[piece][s][1];
 				}
-				currentcolour = colours[piece];
+				colourqueue[0] = colourqueue[1];
+				colourqueue[1] = colourqueue[2];
+				colourqueue[2] = colourqueue[3];
+				colourqueue[3] = colours[piece];
+				
+				// Draw the next pieces to the right of the game board
+				drawpiece(colourqueue[1], 1);
+				drawpiece(colourqueue[2], 2);
+				drawpiece(colourqueue[3], 3);
 			}
 
 			function rotateshape(xmul, ymul)
 			{
 				for(s = 0; s < 4; s++)
 				{
-					var newy = ymul*currentshape[s][0];
-					currentshape[s][0] = xmul*currentshape[s][1];
-					currentshape[s][1] = newy;
+					var newy = ymul*shapequeue[0][s][0];
+					shapequeue[0][s][0] = xmul*shapequeue[0][s][1];
+					shapequeue[0][s][1] = newy;
 				}
 			}
 
@@ -94,7 +154,51 @@
 			var pauseperiod;
 			var turbo = false;
 			var lines, level, newlines, score, startheight = 0, startlevel = 0;
-			var mytimeout;
+			var mytimeout, nextpiecetimeout;
+			var newpiecemover;
+
+			function clearpiecedisplay()
+			{
+				for(ix = 0; ix < NEXT_WIDTH; ix++)
+				{
+					for(iy = 0; iy < NEXT_HEIGHT-1; iy++)
+					{
+						setcolour_next(ix, iy, "#ffffff");
+					}
+				}
+			}
+			function scrollnewpiecedisplay()
+			{
+				for(ix = 0; ix < NEXT_WIDTH; ix++)
+				{
+					for(iy = 0; iy < NEXT_HEIGHT-1; iy++)
+					{
+						setcolour_next(ix, iy, getcolour_next(ix, iy+1));
+					}
+				}
+			}
+			function updatenewpiecedisplay()
+			{
+				scrollnewpiecedisplay();
+				newpiecemover--;
+				if(newpiecemover)
+					nextpiecetimeout = setTimeout(updatenewpiecedisplay, 50);
+			}
+			function beginnewpieceanimation()
+			{
+				clearTimeout(nextpiecetimeout);
+				if(newpiecemover)
+				{
+					while(newpiecemover)
+					{
+						newpiecemover--;
+						scrollnewpiecedisplay();
+					}
+						scrollnewpiecedisplay();
+				}
+				newpiecemover = 3;
+				updatenewpiecedisplay();
+			}
 
 			function newpiece()
 			{
@@ -103,8 +207,9 @@
 				{
 					gamestate = -3;
 					updatey = BOARD_HEIGHT;
-					titlescreen1.style.visibility = titlescreen2.style.visibility = "visible";
+					titlescreen1.style.visibility = titlescreen2.style.visibility = nexthider.style.visibility = "visible";
 				}
+				beginnewpieceanimation();
 			}
 
 			function addlines(num)
@@ -168,16 +273,18 @@
 						}
 					}
 					break;
+					
+					// Playing the game
 					case 0:
 						addlines(newlines); newlines = 0;
 
-						drawpiece("#000000");
+						drawpiece("#000000",0);
 						y++;
 
 						if(overlapping())
 						{
 							y--;
-							drawpiece(currentcolour);
+							drawpiece(colourqueue[0],0);
 
 							// check lines
 							newlines = 0;
@@ -186,9 +293,10 @@
 							pauseperiod = 0;
 						}
 
-						drawpiece(currentcolour);
+						drawpiece(colourqueue[0],0);
 					break;
 
+					// Making the board fill with white
 					case -2:
 						updatey--;
 						if(updatey >= 0)
@@ -198,8 +306,7 @@
 						}
 						else
 						{
-							titlescreen1.style.visibility = "hidden";
-							titlescreen2.style.visibility = "hidden";
+							titlescreen1.style.visibility = titlescreen2.style.visibility = nexthider.style.visibility = "hidden";
 							for(iy = 0; iy < BOARD_HEIGHT; iy++)
 							{
 								if(iy < BOARD_HEIGHT - startheight)
@@ -218,9 +325,13 @@
 							gamestate = 0;
 						}
 					break;
+					
+					// The game starts out in this state
 					case -3:
 						pauseperiod = 500;
 					break;
+					
+					// Starting a new game
 					case -4:
 						lines = score = newlines = 0;
 						level = startlevel;
@@ -234,19 +345,19 @@
 
 			function move(direction)
 			{
-				drawpiece("#000000");
+				drawpiece("#000000",0);
 				x += direction;
 				if(overlapping()) x -= direction;
-				drawpiece(currentcolour);
+				drawpiece(colourqueue[0],0);
 			}
 
 			function rotate(direction)
 			{
-				drawpiece("#000000");
+				drawpiece("#000000",0);
 				if(direction > 0) rotateshape(-1, 1); else rotateshape(1, -1);
 				if(overlapping())
 					if(direction < 0) rotateshape(-1, 1); else rotateshape(1, -1);
-				drawpiece(currentcolour);
+				drawpiece(colourqueue[0],0);
 			}
 
 			function keydown(e)
@@ -267,9 +378,11 @@
 						case 90:	//x						case 38:	//up							rotate(-1);						break;						case 88:	//z							rotate(1);						break;
 						case 32:
 							gamestate = -5;
-							pausescreen.style.visibility = "visible";
+							pausescreen.style.visibility = nexthider.style.visibility = "visible";
 							clearTimeout(mytimeout);						break;					}
 					break;
+					
+					// The game starts in this state
 					case -3:
 						if(keycode > 47 && keycode < 58)
 						{
@@ -283,6 +396,7 @@
 									gamestate = -4;
 									updatey = BOARD_HEIGHT;
 									newlines = 0;
+									clearpiecedisplay();
 								break;
 								case 81:
 									startheight++;
@@ -299,7 +413,7 @@
 						if(keycode == 32)
 						{
 							gamestate = 0;
-							pausescreen.style.visibility = "hidden";
+							pausescreen.style.visibility = nexthider.style.visibility = "hidden";
 							clearTimeout(mytimeout);							mytimeout = setTimeout(updategame, (turbo && !gamestate) ? 30 : pauseperiod);
 						}
 					break;
@@ -330,22 +444,44 @@
 						cell.bgColor = "#000000";
 					}
 				}
+				
+				/* create next piece table */
+				tab = document.getElementById("nexttable");
+				for(var y = 0; y < NEXT_HEIGHT; y++)
+				{
+					var row = tab.insertRow(0);
+					for(var x = 0; x < NEXT_WIDTH; x++)
+					{
+						var cell = row.insertCell(0);
+						cell.width = cell.height = 1;
+						cell.bgColor = "#FFFFFF";
+					}
+				}
+				
 				sizetable();
-
+				
 				gamestate = -3;
 				document.onkeydown = keydown;
-				document.onkeyup = keyup;
+				document.onkeyup = keyup;				
+
+				// Fill the piecequeue
+				pickpiece();
+				pickpiece();
+				pickpiece();
+				beginnewpieceanimation();
 				updategame();
 			}
 
 			function sizetable()
 			{
 				var tab = document.getElementById("gametable");
+				var ntab = document.getElementById("nexttable");
 				var size = (document.body.clientHeight-2) / BOARD_HEIGHT;
 				var cury = 0;
+				
+				var width, height;
 
 				/* size table */
-				var tab = document.getElementById("gametable");
 				for(var y = 0; y < BOARD_HEIGHT; y++)
 				{
 					var nexty = cury + size;
@@ -354,12 +490,35 @@
 					{
 						var nextx = curx + size;
 						var cell = tab.rows[y].cells[x];
-						cell.width = Math.floor(nextx) - Math.floor(curx);
-						cell.height = Math.floor(nexty) - Math.floor(cury);
+						
+						// save the width and height to be used later on
+						cell.width = width = Math.floor(nextx) - Math.floor(curx);
+						cell.height = height = Math.floor(nexty) - Math.floor(cury);
 						curx = nextx;
 					}
 					cury = nexty;
+					
 				}
+				
+				/* Be a little lazier with the next block table */
+				for(var y = 0; y < NEXT_HEIGHT; y++)
+				{
+					for(var x = 0; x < NEXT_WIDTH; x++)
+					{
+						var cell = ntab.rows[y].cells[x];
+						cell.width = width;
+						cell.height = height;
+					}
+				}
+				nexttable.style.left = curx+1;
+				nextlabel.style.left = curx+width;
+				nexttable.style.top = (cury - NEXT_HEIGHT*(height))/2;
+				nextlabel.style.top = nexttable.style.top;
+
+				nexthider.style.left = nextlabel.style.left; nexthider.style.top = nextlabel.style.top;
+				nexthider.width = width*NEXT_WIDTH; nexthider.height = height*NEXT_HEIGHT;
+				nexthider.rows[0].cells[0].height = height*NEXT_HEIGHT;
+				nexthider.rows[0].cells[0].width = width*NEXT_WIDTH;
 
 				pausescreen.width = titlescreen1.width = titlescreen2.width = infotable.width = Math.floor(curx);
 				pausescreen.rows[0].cells[0].height = titlescreen1.rows[0].cells[0].height = titlescreen2.rows[0].cells[0].height = Math.floor(cury);
@@ -371,10 +530,19 @@
 	<body onresize="sizetable()" onload="main()" bgcolor="#ffffff">
 		<table id="gametable" style="position:absolute;left:0px;top:0px;" border=0 cellspacing=0 cellpadding=0>
 		</table>
+		<table id="nexttable" style="position:absolute;text-align=center;" border=0 cellspacing=0 cellpadding=0>
+		</table>
+		<div id="nextlabel" style="position:absolute;">Next blocks:</div>
+		<table id="nexthider" style="position:absolute;left:50px;top:0px;visibility:visible;" border=0 cellspacing=0 cellpadding=0>
+			<tr><td valign=middle bgcolor="#ffffff">
+			</td></tr>
+		</table>
 		<table id="titlescreen1" style="position:absolute;left:2px;top:2px;" width=320 border=0 cellspacing=0 cellpadding=0>
 			<tr><td valign=middle>
 			<div style="color: #000000;text-align:center;">
-			<h1>Tetrominoes</h1><h2>by Thomas Harte</h2>
+			<h1>Tetrominoes</h1>
+			<p><font size="+2"><b>by Thomas Harte</b></font><br />
+			<font size="-1">with additions by Steven Wallace</font><br /></p>
 			Space bar: start game/pause game<br />
 			Cursor left/right: move piece<br />
 			Cursor down: fast drop<br />
@@ -389,7 +557,9 @@
 		<table id="titlescreen2" style="position:absolute;left:0px;top:0px;" width=320 border=0 cellspacing=0 cellpadding=0>
 			<tr><td valign=middle>
 			<div style="color: #ffffff;text-align:center;">
-			<h1>Tetrominoes</h1><h2>by Thomas Harte</h2>
+			<h1>Tetrominoes</h1>
+			<p><font size="+2"><b>by Thomas Harte</b></font><br />
+			<font size="-1">with additions by Steven Wallace</font><br /></p>
 			Space bar: start game/pause game<br />
 			Cursor left/right: move piece<br />
 			Cursor down: fast drop<br />
@@ -417,10 +587,5 @@
 			</div>
 			</td></tr>
 		</table>
-<script src="http://www.google-analytics.com/urchin.js" type="text/javascript">
-</script>
-<script type="text/javascript">
-_uacct = "UA-330393-1";
-urchinTracker();
-</script>		</body>
+		</body>
 </html>
