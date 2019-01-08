@@ -8,7 +8,7 @@
 		<script type="text/javascript">
 			var BOARD_WIDTH = 10;
 			var BOARD_HEIGHT = 20;
-			
+
 			var NEXT_WIDTH = 6;
 			var NEXT_HEIGHT = 14;
 
@@ -17,43 +17,42 @@
 				if(x >= 0 && x < BOARD_WIDTH && y >= 0 & y < BOARD_HEIGHT)
 					gametable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor = colour;
 			}
-			function setcolour_next(x, y, colour) {
+
+			function setcolour_next(x, y, colour)
+			{
 				if(x >= 0 && x < NEXT_WIDTH && y >= 0 && y < NEXT_HEIGHT)
 					nexttable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor = colour;
 			}
-			
+
 			function getcolour(x, y)
 			{
 				if(x >= 0 && x < BOARD_WIDTH && y >= 0 & y < BOARD_HEIGHT)
 					return gametable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor;
 
-
 				return (y > 0) ? "#ffffff" : "#000000";
 			}
+
 			function getcolour_next(x, y)
 			{
 				if(x >= 0 && x < NEXT_WIDTH && y >= 0 & y < NEXT_HEIGHT)
 					return nexttable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor;
 
-
 				return (y > 0) ? "#ffffff" : "#000000";
 			}
-			
+
 			// Shape queue holds current in index zero, next in index 1, and the one after in index 2
-			var shapequeue = [ [[0, 0], [0, 0], [0, 0], [0, 0]], 
-					    [[0, 0], [0, 0], [0, 0], [0, 0]], 
-					    [[0, 0], [0, 0], [0, 0], [0, 0]], 
-					    [[0, 0], [0, 0], [0, 0], [0, 0]] ];
+			var shapequeue = [
+				[[0, 0], [0, 0], [0, 0], [0, 0]],
+				[[0, 0], [0, 0], [0, 0], [0, 0]],
+				[[0, 0], [0, 0], [0, 0], [0, 0]],
+				[[0, 0], [0, 0], [0, 0], [0, 0]]
+			];
 			var colourqueue = [0,0,0,0];
-			//var currentshape = [[0, 0], [0, 0], [0, 0], [0, 0]];
-			//var currentcolour;
-			var locked = false;
 
 			function drawpiece(colour, idx)
 			{
 				if(idx == 0) for(c = 0; c < 4; c++)
 					setcolour(x + shapequeue[idx][c][0], y + shapequeue[idx][c][1], colour);
-					
 				else 
 				{
 					for(ix = 0; ix < 5; ix++) 
@@ -73,7 +72,7 @@
 					var xx = x + shapequeue[0][c][0];
 					if(xx < 0 || xx >= BOARD_WIDTH)
 						return true;
-					
+
 					if(getcolour(xx, y + shapequeue[0][c][1]) != "#000000")
 						return true;
 				}
@@ -104,7 +103,6 @@
 			];
 			var colours = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#c0c0c0"];
 			var offsets = [0, -0.5, -0.5, 0, 0, -0.5, -0.5];
-
 			var x, y;
 
 			function pickpiece()
@@ -113,7 +111,7 @@
 				drawpiece("#FFFFFF", 1);
 				drawpiece("#FFFFFF", 2);
 				drawpiece("#FFFFFF", 3);
-				
+
 				// Determine a new piece to add to the back of the queue
 				var piece = Math.floor( Math.random() * 7);
 				x = (BOARD_WIDTH-1) / 2 + offsets[piece];
@@ -121,12 +119,10 @@
 				for(s = 0; s < 4; s++) 
 				{				
 					// Shift up pieces in the queue
-					for(var t = 0; t < 3; t++) for(var u = 0; u < 2; u ++)
-					shapequeue[t][s][u] = shapequeue[t+1][s][u];
-					//shapequeue[0][s][1] = shapequeue[1][s][1];
-					//shapequeue[1][s][0] = shapequeue[2][s][0];
-					//shapequeue[1][s][1] = shapequeue[2][s][1];
-					
+					for(var t = 0; t < 3; t++)
+						for(var u = 0; u < 2; u ++)
+							shapequeue[t][s][u] = shapequeue[t+1][s][u];
+
 					// Add new random piece to back of queue
 					shapequeue[3][s][0] = shapes[piece][s][0];
 					shapequeue[3][s][1] = shapes[piece][s][1];
@@ -135,7 +131,7 @@
 				colourqueue[1] = colourqueue[2];
 				colourqueue[2] = colourqueue[3];
 				colourqueue[3] = colours[piece];
-				
+
 				// Draw the next pieces to the right of the game board
 				drawpiece(colourqueue[1], 1);
 				drawpiece(colourqueue[2], 2);
@@ -170,6 +166,7 @@
 					}
 				}
 			}
+
 			function scrollnewpiecedisplay()
 			{
 				for(ix = 0; ix < NEXT_WIDTH; ix++)
@@ -180,6 +177,7 @@
 					}
 				}
 			}
+
 			function updatenewpiecedisplay()
 			{
 				scrollnewpiecedisplay();
@@ -187,6 +185,7 @@
 				if(newpiecemover)
 					nextpiecetimeout = setTimeout(updatenewpiecedisplay, 50);
 			}
+
 			function beginnewpieceanimation()
 			{
 				clearTimeout(nextpiecetimeout);
@@ -233,8 +232,6 @@
 
 			function updategame()
 			{
-				while(locked);
-				locked = true;
 				switch(gamestate)
 				{
 					case 2:
@@ -276,7 +273,7 @@
 						}
 					}
 					break;
-					
+
 					// Playing the game
 					case 0:
 						addlines(newlines); newlines = 0;
@@ -328,12 +325,12 @@
 							gamestate = 0;
 						}
 					break;
-					
+
 					// The game starts out in this state
 					case -3:
 						pauseperiod = 500;
 					break;
-					
+
 					// Starting a new game
 					case -4:
 						lines = score = newlines = 0;
@@ -342,7 +339,6 @@
 						gamestate = -2;
 					break;
 				}
-				locked = false;
 				mytimeout = setTimeout(updategame, (turbo && !gamestate) ? 30 : pauseperiod);
 			}
 
@@ -365,8 +361,6 @@
 
 			function keydown(e)
 			{
-				while(locked);
-				locked = true;
 				var keycode = (e) ? e.which : event.keyCode;
 
 				switch(gamestate)
@@ -375,11 +369,9 @@
 					switch (keycode)
 					{
 						case 40:	//down
-							locked = false;
 							turbo = true;
 							clearTimeout(mytimeout);
 							updategame();
-							locked = true;
 						break;
 						case 37:	//left
 							move(-1);
@@ -401,7 +393,7 @@
 						break;
 					}
 					break;
-					
+
 					// The game starts in this state
 					case -3:
 						if(keycode > 47 && keycode < 58)
@@ -439,17 +431,12 @@
 						}
 					break;
 				}
-
-				locked = false;
 			}
 
 			function keyup(e)
 			{
-				while(locked);
-				locked = true;
 				var keycode = (e) ? e.which : event.keyCode;
 				if(keycode == 40) turbo = false;
-				locked = false;
 			}
 
 			function main()
@@ -466,7 +453,7 @@
 						cell.bgColor = "#000000";
 					}
 				}
-				
+
 				/* create next piece table */
 				tab = document.getElementById("nexttable");
 				for(var y = 0; y < NEXT_HEIGHT; y++)
@@ -479,14 +466,14 @@
 						cell.bgColor = "#FFFFFF";
 					}
 				}
-				
+
 				sizetable();
-				
+
 				gamestate = -3;
 				document.onkeydown = keydown;
 				document.onkeyup = keyup;				
 
-				// Fill the piecequeue
+				// Fill the piece queue
 				pickpiece();
 				pickpiece();
 				pickpiece();
@@ -500,7 +487,7 @@
 				var ntab = document.getElementById("nexttable");
 				var size = (document.body.clientHeight-2) / BOARD_HEIGHT;
 				var cury = 0;
-				
+
 				var width, height;
 
 				/* size table */
@@ -519,9 +506,8 @@
 						curx = nextx;
 					}
 					cury = nexty;
-					
 				}
-				
+
 				/* Be a little lazier with the next block table */
 				for(var y = 0; y < NEXT_HEIGHT; y++)
 				{
