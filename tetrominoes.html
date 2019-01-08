@@ -1,0 +1,426 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+		<title>Tetrominoes</title>
+		<meta name="description" content="A falling block game, invented in Russia in the 1980s, in which the player attempts to make solid horizontal lines using tetronimoes — block shapes consisting of four squares each.">
+		<meta name="keywords" content="tetronimoes, tetrads, falling block game, lines">
+		<script type="text/javascript">
+			var BOARD_WIDTH = 10;
+			var BOARD_HEIGHT = 20;
+
+			function setcolour(x, y, colour)
+			{
+				if(x >= 0 && x < BOARD_WIDTH && y >= 0 & y < BOARD_HEIGHT)
+					gametable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor = colour;			}
+			function getcolour(x, y)
+			{
+				if(x >= 0 && x < BOARD_WIDTH && y >= 0 & y < BOARD_HEIGHT)
+					return gametable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor;
+
+				return (y > 0) ? "#ffffff" : "#000000";
+			}
+
+			var currentshape = [[0, 0], [0, 0], [0, 0], [0, 0]];
+			var currentcolour;
+			var locked = false;
+
+			function drawpiece(colour)
+			{
+				for(c = 0; c < 4; c++)
+					setcolour(x + currentshape[c][0], y + currentshape[c][1], colour);
+			}
+
+			function overlapping()
+			{
+				for(c = 0; c < 4; c++)
+					if(getcolour(x + currentshape[c][0], y + currentshape[c][1]) != "#000000")
+						return true;
+				return false;
+			}
+
+			var shapes = [
+			// ----
+				[	[-1.5, -0.5], [-0.5, -0.5], [0.5, -0.5], [1.5, -0.5]	],
+			/* -
+			   ---	 */
+				[	[-1, -1], [-1, 0], [0, 0], [1, 0]	],
+			/*   -
+			   ---	 */
+				[	[1, -1], [1, 0], [0, 0], [-1, 0]	],
+			/*  --
+			    --	 */
+				[	[-0.5, -0.5], [-0.5, 0.5], [0.5, 0.5], [0.5, -0.5]	],
+			/*   -
+			    ---	 */
+				[	[-1, 0], [0, 0], [1, 0], [0, -1]	],
+			/*  --
+			     --	 */
+				[	[-1, -1], [0, -1], [0, 0], [1, 0]	],
+			/*   --
+			    --	 */
+				[	[1, -1], [0, -1], [0, 0], [-1, 0]	]
+			];
+			var colours = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#c0c0c0"];
+			var offsets = [0, -0.5, -0.5, 0, 0, -0.5, -0.5];
+
+			var x, y;
+
+			function pickpiece()
+			{
+				y = 0;
+				var piece = Math.floor( Math.random() * 7);
+				x = (BOARD_WIDTH-1) / 2 + offsets[piece];
+				for(s = 0; s < 4; s++)
+				{
+					currentshape[s][0] = shapes[piece][s][0];
+					currentshape[s][1] = shapes[piece][s][1];
+				}
+				currentcolour = colours[piece];
+			}
+
+			function rotateshape(xmul, ymul)
+			{
+				for(s = 0; s < 4; s++)
+				{
+					var newy = ymul*currentshape[s][0];
+					currentshape[s][0] = xmul*currentshape[s][1];
+					currentshape[s][1] = newy;
+				}
+			}
+
+			var gamestate;
+			var updatey;
+			var pauseperiod;
+			var turbo = false;
+			var lines, level, newlines, score, startheight = 0, startlevel = 0;
+			var mytimeout;
+
+			function newpiece()
+			{
+				pickpiece();
+				if(overlapping())
+				{
+					gamestate = -3;
+					updatey = BOARD_HEIGHT;
+					titlescreen1.style.visibility = titlescreen2.style.visibility = "visible";
+				}
+			}
+
+			function addlines(num)
+			{
+				var droptimes = [53, 49, 45, 41, 37, 33, 28, 22, 17, 10, 9, 8, 7, 6, 6, 5, 5, 4, 4, 3];
+				var scores = [0, 40, 100, 300, 1200];
+
+				lines += num;
+				score += scores[num] * (level+1);
+				if(level < Math.floor(lines / 10))
+					level = Math.floor(lines / 10);
+				if(level > 19) level = 19;
+				pauseperiod = (1000*droptimes[level]) / 60;
+				curlines.innerHTML = lines;
+				curlevel.innerHTML = level;
+				curscore.innerHTML = score;
+			}
+
+			function updategame()
+			{
+				while(locked);
+				locked = true;
+				switch(gamestate)
+				{
+					case 2:
+						for(ix = 0; ix < BOARD_WIDTH; ix++)
+						{
+							for(iy = updatey; iy > 0; iy--)
+								setcolour(ix, iy, getcolour(ix, iy-1));
+							setcolour(ix, 0, "#000000");
+						}
+						gamestate = 1;
+						pauseperiod = 0;
+					break;
+					case 1:
+					{
+						pauseperiod = 50;
+						while(updatey >= 0)
+						{
+							var count = 0;
+							for(ix = 0; ix < BOARD_WIDTH; ix++)
+								if(getcolour(ix, updatey) != "#000000")
+									count++;
+							if(count == BOARD_WIDTH)
+								break;
+							updatey--;
+						}
+
+						if(updatey >= 0)
+						{
+							newlines++;
+							for(ix = 0; ix < BOARD_WIDTH; ix++)
+								setcolour(ix, updatey, "#808080");
+							gamestate = 2;
+						}
+						else
+						{
+							gamestate = 0;
+							pauseperiod = 0;
+							newpiece();
+						}
+					}
+					break;
+					case 0:
+						addlines(newlines); newlines = 0;
+
+						drawpiece("#000000");
+						y++;
+
+						if(overlapping())
+						{
+							y--;
+							drawpiece(currentcolour);
+
+							// check lines
+							newlines = 0;
+							updatey = BOARD_HEIGHT-1;
+							gamestate = 1;
+							pauseperiod = 0;
+						}
+
+						drawpiece(currentcolour);
+					break;
+
+					case -2:
+						updatey--;
+						if(updatey >= 0)
+						{
+							for(s = 0; s < BOARD_WIDTH; s++)
+								setcolour(s, updatey, "#ffffff");
+						}
+						else
+						{
+							titlescreen1.style.visibility = "hidden";
+							titlescreen2.style.visibility = "hidden";
+							for(iy = 0; iy < BOARD_HEIGHT; iy++)
+							{
+								if(iy < BOARD_HEIGHT - startheight)
+								{
+									for(ix = 0; ix < BOARD_WIDTH; ix++)
+										setcolour(ix, iy, "#000000");
+								}
+								else
+								{
+									for(ix = 0; ix < BOARD_WIDTH; ix++)
+										setcolour(ix, iy, Math.random() > 0.5 ? "#000000" : colours[Math.floor(Math.random() * 7)]);
+									setcolour(Math.floor(Math.random() * BOARD_WIDTH), iy, "#000000");
+								}
+							}
+							newpiece();
+							gamestate = 0;
+						}
+					break;
+					case -3:
+						pauseperiod = 500;
+					break;
+					case -4:
+						lines = score = newlines = 0;
+						level = startlevel;
+						pauseperiod = 50;
+						gamestate = -2;
+					break;
+				}
+				locked = false;
+				mytimeout = setTimeout(updategame, (turbo && !gamestate) ? 30 : pauseperiod);
+			}
+
+			function move(direction)
+			{
+				drawpiece("#000000");
+				x += direction;
+				if(overlapping()) x -= direction;
+				drawpiece(currentcolour);
+			}
+
+			function rotate(direction)
+			{
+				drawpiece("#000000");
+				if(direction > 0) rotateshape(-1, 1); else rotateshape(1, -1);
+				if(overlapping())
+					if(direction < 0) rotateshape(-1, 1); else rotateshape(1, -1);
+				drawpiece(currentcolour);
+			}
+
+			function keydown(e)
+			{
+				while(locked);
+				locked = true;
+				var keycode = (e) ? e.which : event.keyCode;
+
+				switch(gamestate)
+				{
+					case 0:
+					switch (keycode)					{						case 40:	//down
+							locked = false;
+							turbo = true;
+							clearTimeout(mytimeout);							updategame();
+							locked = true;
+						break;						case 37:	//left							move(-1);						break;						case 39:	//right							move(1);						break;
+						case 90:	//x						case 38:	//up							rotate(-1);						break;						case 88:	//z							rotate(1);						break;
+						case 32:
+							gamestate = -5;
+							pausescreen.style.visibility = "visible";
+							clearTimeout(mytimeout);						break;					}
+					break;
+					case -3:
+						if(keycode > 47 && keycode < 58)
+						{
+							startlevel = keycode - 48;
+							stlev1.innerHTML = stlev2.innerHTML = startlevel;
+						}
+						else
+							switch(keycode)
+							{
+								case 32:
+									gamestate = -4;
+									updatey = BOARD_HEIGHT;
+									newlines = 0;
+								break;
+								case 81:
+									startheight++;
+									if(startheight > BOARD_HEIGHT-5) startheight = BOARD_HEIGHT-5;
+								break;
+								case 65:
+									startheight--;
+									if(startheight < 0) startheight = 0;
+								break;
+						}
+						stheight1.innerHTML = stheight2.innerHTML = startheight;
+					break;
+					case -5:
+						if(keycode == 32)
+						{
+							gamestate = 0;
+							pausescreen.style.visibility = "hidden";
+							clearTimeout(mytimeout);							mytimeout = setTimeout(updategame, (turbo && !gamestate) ? 30 : pauseperiod);
+						}
+					break;
+				}
+
+				locked = false;
+			}
+
+			function keyup(e)
+			{
+				while(locked);
+				locked = true;
+				var keycode = (e) ? e.which : event.keyCode;
+				if(keycode == 40) turbo = false;				locked = false;
+			}
+
+			function main()
+			{
+				/* create table */
+				var tab = document.getElementById("gametable");
+				for(var y = 0; y < BOARD_HEIGHT; y++)
+				{
+					var row = tab.insertRow(0);
+					for(var x = 0; x < BOARD_WIDTH; x++)
+					{
+						var cell = row.insertCell(0);
+						cell.width = cell.height = 1;
+						cell.bgColor = "#000000";
+					}
+				}
+				sizetable();
+
+				gamestate = -3;
+				document.onkeydown = keydown;
+				document.onkeyup = keyup;
+				updategame();
+			}
+
+			function sizetable()
+			{
+				var tab = document.getElementById("gametable");
+				var size = (document.body.clientHeight-2) / BOARD_HEIGHT;
+				var cury = 0;
+
+				/* size table */
+				var tab = document.getElementById("gametable");
+				for(var y = 0; y < BOARD_HEIGHT; y++)
+				{
+					var nexty = cury + size;
+					var curx = 0;
+					for(var x = 0; x < BOARD_WIDTH; x++)
+					{
+						var nextx = curx + size;
+						var cell = tab.rows[y].cells[x];
+						cell.width = Math.floor(nextx) - Math.floor(curx);
+						cell.height = Math.floor(nexty) - Math.floor(cury);
+						curx = nextx;
+					}
+					cury = nexty;
+				}
+
+				pausescreen.width = titlescreen1.width = titlescreen2.width = infotable.width = Math.floor(curx);
+				pausescreen.rows[0].cells[0].height = titlescreen1.rows[0].cells[0].height = titlescreen2.rows[0].cells[0].height = Math.floor(cury);
+			}
+
+		</script>
+		<title></title>
+	</head>
+	<body onresize="sizetable()" onload="main()" bgcolor="#ffffff">
+		<table id="gametable" style="position:absolute;left:0px;top:0px;" border=0 cellspacing=0 cellpadding=0>
+		</table>
+		<table id="titlescreen1" style="position:absolute;left:2px;top:2px;" width=320 border=0 cellspacing=0 cellpadding=0>
+			<tr><td valign=middle>
+			<div style="color: #000000;text-align:center;">
+			<h1>Tetrominoes</h1><h2>by Thomas Harte</h2>
+			Space bar: start game/pause game<br />
+			Cursor left/right: move piece<br />
+			Cursor down: fast drop<br />
+			Cursor up or Z: rotate anti-clockwise<br />
+			X: rotate clockwise<br /><br />
+			0–9: set start level (currently <span id="stlev1">0</span>)<br />
+			Q: increase start height (currently <span id="stheight1">0</span>)<br />
+			A: decrease start height
+			</div>
+			</td></tr>
+		</table>
+		<table id="titlescreen2" style="position:absolute;left:0px;top:0px;" width=320 border=0 cellspacing=0 cellpadding=0>
+			<tr><td valign=middle>
+			<div style="color: #ffffff;text-align:center;">
+			<h1>Tetrominoes</h1><h2>by Thomas Harte</h2>
+			Space bar: start game/pause game<br />
+			Cursor left/right: move piece<br />
+			Cursor down: fast drop<br />
+			Cursor up or Z: rotate anti-clockwise<br />
+			X: rotate clockwise<br /><br />
+			0–9: set start level (currently <span id="stlev2">0</span>)<br />
+			Q: increase start height (currently <span id="stheight2">0</span>)<br />
+			A: decrease start height
+			</div>
+			</td></tr>
+		</table>
+		<table id="pausescreen" style="position:absolute;left:0px;top:0px;visibility:hidden;" border=0 cellspacing=0 cellpadding=0>
+			<tr><td valign=middle bgcolor="#808080">
+			<div style="color: #000000;text-align:center;">
+			<h1>Paused</h1><h2>Press space to unpause</h2>
+			</div>
+			</td></tr>
+		</table>
+		<table id="infotable" style="position:absolute;left:0px;top:0px;" width=320 border=0 cellspacing=0 cellpadding=0>
+			<tr><td valign=top>
+			<div style="color: #ffffff;text-align:right;">
+			Lines: <span id="curlines">0</span><br />
+			Level: <span id="curlevel">0</span><br />
+			Score: <span id="curscore">0</span>
+			</div>
+			</td></tr>
+		</table>
+<script src="http://www.google-analytics.com/urchin.js" type="text/javascript">
+</script>
+<script type="text/javascript">
+_uacct = "UA-330393-1";
+urchinTracker();
+</script>		</body>
+</html>
