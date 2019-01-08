@@ -15,7 +15,8 @@
 			function setcolour(x, y, colour)
 			{
 				if(x >= 0 && x < BOARD_WIDTH && y >= 0 & y < BOARD_HEIGHT)
-					gametable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor = colour;			}
+					gametable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor = colour;
+			}
 			function setcolour_next(x, y, colour) {
 				if(x >= 0 && x < NEXT_WIDTH && y >= 0 && y < NEXT_HEIGHT)
 					nexttable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor = colour;
@@ -26,12 +27,14 @@
 				if(x >= 0 && x < BOARD_WIDTH && y >= 0 & y < BOARD_HEIGHT)
 					return gametable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor;
 
+
 				return (y > 0) ? "#ffffff" : "#000000";
 			}
 			function getcolour_next(x, y)
 			{
 				if(x >= 0 && x < NEXT_WIDTH && y >= 0 & y < NEXT_HEIGHT)
 					return nexttable.rows[Math.floor(y)].cells[Math.floor(x)].bgColor;
+
 
 				return (y > 0) ? "#ffffff" : "#000000";
 			}
@@ -369,17 +372,34 @@
 				switch(gamestate)
 				{
 					case 0:
-					switch (keycode)					{						case 40:	//down
+					switch (keycode)
+					{
+						case 40:	//down
 							locked = false;
 							turbo = true;
-							clearTimeout(mytimeout);							updategame();
+							clearTimeout(mytimeout);
+							updategame();
 							locked = true;
-						break;						case 37:	//left							move(-1);						break;						case 39:	//right							move(1);						break;
-						case 90:	//x						case 38:	//up							rotate(-1);						break;						case 88:	//z							rotate(1);						break;
+						break;
+						case 37:	//left
+							move(-1);
+						break;
+						case 39:	//right
+							move(1);
+						break;
+						case 90:	//x
+						case 38:	//up
+							rotate(-1);
+						break;
+						case 88:	//z
+							rotate(1);
+						break;
 						case 32:
 							gamestate = -5;
 							pausescreen.style.visibility = nexthider.style.visibility = "visible";
-							clearTimeout(mytimeout);						break;					}
+							clearTimeout(mytimeout);
+						break;
+					}
 					break;
 					
 					// The game starts in this state
@@ -414,7 +434,8 @@
 						{
 							gamestate = 0;
 							pausescreen.style.visibility = nexthider.style.visibility = "hidden";
-							clearTimeout(mytimeout);							mytimeout = setTimeout(updategame, (turbo && !gamestate) ? 30 : pauseperiod);
+							clearTimeout(mytimeout);
+							mytimeout = setTimeout(updategame, (turbo && !gamestate) ? 30 : pauseperiod);
 						}
 					break;
 				}
@@ -427,7 +448,8 @@
 				while(locked);
 				locked = true;
 				var keycode = (e) ? e.which : event.keyCode;
-				if(keycode == 40) turbo = false;				locked = false;
+				if(keycode == 40) turbo = false;
+				locked = false;
 			}
 
 			function main()
