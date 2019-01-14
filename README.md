@@ -1,7 +1,7 @@
 # Tetrominoes
 A browser-based falling block game invented in Russia in the 1980s, in which the player attempts to make solid horizontal lines using tetronimoes  — block shapes consisting of four squares each.
 
-[Play it now.](tomharte.github.io/Tetrominoes/tetrominoes.html)
+[Play it now.](http://tomharte.github.io/Tetrominoes/tetrominoes.html)
 
 You've probably played other games like it before:
 
