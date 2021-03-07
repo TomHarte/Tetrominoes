@@ -368,22 +368,28 @@
 					case 0:
 					switch (keycode)
 					{
-						case 40:	//down
+						case 75:	// K.
+						case 40:	// Down cursor.
 							turbo = true;
 							clearTimeout(mytimeout);
 							updategame();
 						break;
-						case 37:	//left
+						case 74:	// J.
+						case 37:	// Left cursor.
 							move(-1);
 						break;
-						case 39:	//right
+						case 76:	// L.
+						case 39:	// Right cursor.
 							move(1);
 						break;
-						case 90:	//x
-						case 38:	//up
+						case 65:	// A.
+						case 73:	// I.
+						case 90:	// X.
+						case 38:	// Up cursor.
 							rotate(-1);
 						break;
-						case 88:	//z
+						case 83:	// S.
+						case 88:	// Z.
 							rotate(1);
 						break;
 						case 32:
@@ -436,7 +442,7 @@
 			function keyup(e)
 			{
 				var keycode = (e) ? e.which : event.keyCode;
-				if(keycode == 40) turbo = false;
+				if(keycode == 40 || keycode == 75) turbo = false;
 			}
 
 			function main()
@@ -552,10 +558,10 @@
 			<p><font size="+2"><b>by Thomas Harte</b></font><br />
 			<font size="-1">with additions by Steven Wallace</font><br /></p>
 			Space bar: start game/pause game<br />
-			Cursor left/right: move piece<br />
-			Cursor down: fast drop<br />
-			Cursor up or Z: rotate anti-clockwise<br />
-			X: rotate clockwise<br /><br />
+			Cursor left/right or J/L: move piece<br />
+			Cursor down or K: fast drop<br />
+			Cursor up, I, A or Z: rotate anti-clockwise<br />
+			S or X: rotate clockwise<br /><br />
 			0–9: set start level (currently <span id="stlev1">0</span>)<br />
 			Q: increase start height (currently <span id="stheight1">0</span>)<br />
 			A: decrease start height
@@ -569,10 +575,10 @@
 			<p><font size="+2"><b>by Thomas Harte</b></font><br />
 			<font size="-1">with additions by Steven Wallace</font><br /></p>
 			Space bar: start game/pause game<br />
-			Cursor left/right: move piece<br />
-			Cursor down: fast drop<br />
-			Cursor up or Z: rotate anti-clockwise<br />
-			X: rotate clockwise<br /><br />
+			Cursor left/right or J/L: move piece<br />
+			Cursor down or K: fast drop<br />
+			Cursor up, I, A or Z: rotate anti-clockwise<br />
+			S or X: rotate clockwise<br /><br />
 			0–9: set start level (currently <span id="stlev2">0</span>)<br />
 			Q: increase start height (currently <span id="stheight2">0</span>)<br />
 			A: decrease start height
